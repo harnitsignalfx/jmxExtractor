@@ -12,7 +12,7 @@ git clone git://github.com/harnitsignalfx/jmxExtractor.git
 
 ```
 cd jmxExtractor
-javac -target 1.6 -classpath /usr/share/collectd/java/collectd-api.jar org/collectd/java/jmxExtractor.java
+javac -target 1.6 -classpath /usr/share/collectd/java/collectd-api.jar org/collectd/java/JMXExtractor.java
 ```
 
 ### Insert this into your collectd.conf (likely at /etc/collectd/collectd.conf or at /etc/collectd.conf):
@@ -22,8 +22,8 @@ LoadPlugin java
 <Plugin java>
   JVMArg "-Djava.class.path=/usr/share/collectd/java/collectd-api.jar:/path/to/jmxExtractor/"
 
-  LoadPlugin "org.collectd.java.jmxExtractor"
-  <Plugin "jmxExtractor">
+  LoadPlugin "org.collectd.java.JMXExtractor"
+  <Plugin "JMXExtractor">
     JMXServiceURL "service:jmx:rmi://localhost:9000/jndi/rmi://localhost:9999/jmxrmi"
     MBeanObjectName "kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec"
     MBeanObjectAttribute "Count"
