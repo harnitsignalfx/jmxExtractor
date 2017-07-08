@@ -1,15 +1,19 @@
 # collectd-jmxExtractor
 Extract JMX Mbeans (cumulative counters), convert them to Rate/Sec and send as gauges to SignalFx
 
-Install (Assuming you have collectd installed and sending data to SignalFx)
+# Install (Assuming you have collectd installed and sending data to SignalFx)
 
-# Clone the plugin repo.
+## Clone the plugin repo.
 git clone git://github.com/harnitsignalfx/jmxExtractor.git
-# Compile the plugin 
+
+## Compile the plugin 
 cd jmxExtractor
 javac -classpath /usr/share/collectd/java/collectd-api.jar org/collectd/java/jmxExtractor.java
-Insert this into your collectd.conf (likely at /etc/collectd/collectd.conf or at /etc/collectd.conf):
 
+
+## Insert this into your collectd.conf (likely at /etc/collectd/collectd.conf or at /etc/collectd.conf):
+
+```
 LoadPlugin java
 <Plugin java>
   JVMArg "-Djava.class.path=/usr/share/collectd/java/collectd-api.jar:/path/to/jmxExtractor/"
@@ -22,3 +26,4 @@ LoadPlugin java
   </Plugin>
 </Plugin>
 Restart collectd.
+```
