@@ -31,6 +31,11 @@ LoadPlugin java
 </Plugin>
 ```
 
+Modifiers available are 
+1) JMXServiceURL
+2) MBeanObjectName
+3) MBeanObjectAttribute
+
 ### Restart collectd
 ```
 sudo service collectd restart
