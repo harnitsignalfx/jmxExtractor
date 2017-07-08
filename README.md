@@ -6,10 +6,10 @@ Extract JMX Mbeans (cumulative counters), convert them to Rate/Sec and send as g
 ## Clone the plugin repo.
 git clone git://github.com/harnitsignalfx/jmxExtractor.git
 
-## Compile the plugin (check the path of your collectd-api.jar)
+## Compile the plugin with jre target 1.6 for collectd (also check the path of your collectd-api.jar)
 ```
 cd jmxExtractor
-javac -classpath /usr/share/collectd/java/collectd-api.jar org/collectd/java/jmxExtractor.java
+javac -target 1.6 -classpath /usr/share/collectd/java/collectd-api.jar org/collectd/java/jmxExtractor.java
 ```
 
 ## Insert this into your collectd.conf (likely at /etc/collectd/collectd.conf or at /etc/collectd.conf):
