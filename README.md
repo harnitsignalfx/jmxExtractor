@@ -29,5 +29,9 @@ LoadPlugin java
     MBeanObjectAttribute "Count"
   </Plugin>
 </Plugin>
-Restart collectd.
+```
+
+### Restart collectd
+```
+sudo service collectd restart
 ```
