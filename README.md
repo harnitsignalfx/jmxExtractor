@@ -4,7 +4,7 @@ Extract JMX Mbeans (cumulative counters), convert them to Rate/Sec and send as g
 # Install (Assuming you have collectd installed and sending data to SignalFx)
 
 ## Clone the plugin repo.
-git clone git://github.com/harnitsignalfx/jmxExtractor.git
+```git clone git://github.com/harnitsignalfx/jmxExtractor.git```
 
 ## Compile the plugin with jre target 1.6 for collectd (also check the path of your collectd-api.jar)
 ```
