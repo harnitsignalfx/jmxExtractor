@@ -27,6 +27,8 @@ LoadPlugin java
     JMXServiceURL "service:jmx:rmi://localhost:9000/jndi/rmi://localhost:9999/jmxrmi"
     MBeanObjectName "kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec"
     MBeanObjectAttribute "Count"
+    MetricName "jmxMetric"
+    HostName "jmxHost"
   </Plugin>
 </Plugin>
 ```
@@ -35,6 +37,8 @@ Modifiers available are
 1) JMXServiceURL
 2) MBeanObjectName
 3) MBeanObjectAttribute
+4) MetricName
+5) HostName (Doesn't have to be resolvable, it is just used as a string value)
 
 ### Restart collectd
 ```
