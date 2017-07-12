@@ -38,7 +38,7 @@ Modifiers available are
 2) MBeanObjectName
 3) MBeanObjectAttribute
 4) MetricName
-5) HostName (Doesn't have to be resolvable, it is just used as a string value)
+5) HostName (Optional, if not set then it'll be fetched from collectd)
 
 ### Restart collectd
 ```
