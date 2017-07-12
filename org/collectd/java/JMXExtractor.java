@@ -29,16 +29,19 @@ CollectdShutdownInterface{
 	private String _jmx_service_url = null;
 	private String _mbean_attr = null;
 	private String _mbean_obj_name = null;
-
+    private String _metric_name = null;
+    private String _host_name = null;
+	
 	private Long prevValue = (long) 0;
 	private Long prevTimeStamp = (long) 0;
 
 	JMXServiceURL service_url;
 	JMXConnector connector;
 	MBeanServerConnection connection;
+	
 
 	public enum ConfigType {
-		URL, OBJNAME, ATTR
+		URL, OBJNAME, ATTR, METRICNAME, HOSTNAME
 	}
 
 	public JMXExtractor () {
@@ -55,11 +58,12 @@ CollectdShutdownInterface{
 
 	public int init () {
 		Collectd.logDebug("Entering the init loop");
-		Collectd.logDebug("service url? mbean? attr?"+_jmx_service_url+" "+_mbean_obj_name+" "+_mbean_attr);
+		Collectd.logDebug("service url? mbean? attr? metricname? hostname? "+_jmx_service_url+" "+_mbean_obj_name+" "+
+		_mbean_attr+" "+_metric_name+" "+_host_name);
 		
-		if (_jmx_service_url == null)
+		if (_jmx_service_url == null || _mbean_attr ==null || _mbean_obj_name == null || _metric_name == null || _host_name == null)
 		{
-			Collectd.logError ("JMXExtractor: _jmx_service_url == null");
+			Collectd.logError ("JMXExtractor: An attribute is missing or is null");
 			return (-1);
 		}
 
@@ -84,11 +88,11 @@ CollectdShutdownInterface{
 
 		vl = new ValueList ();
 
-		vl.setHost ("localhost");
+		vl.setHost (_host_name);
 		vl.setPlugin ("JMXStandalone");
-		vl.setPluginInstance (_mbean_obj_name);
+//		vl.setPluginInstance (_mbean_obj_name);
 		vl.setType ("gauge");
-		vl.setTypeInstance("jmxMetric");
+		vl.setTypeInstance(_metric_name);
 
 		Collectd.logDebug("Testing loop ..");
 
@@ -157,6 +161,12 @@ CollectdShutdownInterface{
 			else if(key.equalsIgnoreCase("MbeanObjectAttribute")){
 				configService (child, ConfigType.ATTR);
 			}
+			else if(key.equalsIgnoreCase("MetricName")){
+				configService(child, ConfigType.METRICNAME);
+			}
+			else if(key.equalsIgnoreCase("HostName")){
+				configService(child, ConfigType.HOSTNAME);
+			}
 			else
 			{
 				Collectd.logError ("JMXExtractor plugin: Unknown config option: " + key);
@@ -196,6 +206,14 @@ CollectdShutdownInterface{
 			break;
 		case OBJNAME:
 			_mbean_obj_name = cv.getString();
+			break;
+		case METRICNAME:
+			_metric_name = cv.getString();
+			break;
+		case HOSTNAME:
+			_host_name = cv.getString();
+			break;
+		default:
 			break;
 		}
 
