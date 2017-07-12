@@ -61,12 +61,15 @@ CollectdShutdownInterface{
 		Collectd.logDebug("service url? mbean? attr? metricname? hostname? "+_jmx_service_url+" "+_mbean_obj_name+" "+
 		_mbean_attr+" "+_metric_name+" "+_host_name);
 		
-		if (_jmx_service_url == null || _mbean_attr ==null || _mbean_obj_name == null || _metric_name == null || _host_name == null)
+		if (_jmx_service_url == null || _mbean_attr ==null || _mbean_obj_name == null || _metric_name == null)
 		{
 			Collectd.logError ("JMXExtractor: An attribute is missing or is null");
 			return (-1);
 		}
-
+		
+		if( _host_name == null)
+			_host_name = Collectd.getHostname();
+			
 		try
 		{
 			service_url = new JMXServiceURL (_jmx_service_url);
