@@ -3,34 +3,20 @@ Extract JMX Mbeans (cumulative counters), convert them to Rate/Sec and send as g
 
 ## Install (Assuming you have collectd installed and sending data to SignalFx)
 
-### Clone the plugin repo.
-```
-git clone git://github.com/harnitsignalfx/jmxExtractor.git
-```
+### Copy the included jar file to `/usr/share/collectd/java/`
 
-### Compile the plugin with jre target 1.6 for collectd (also check the path of your collectd-api.jar)
-
+### Insert the sample configuration file under /etc/collectd/managed_config/ 
+Keep in mind that for multiple MBeans, you need the following items in order -
 ```
-cd jmxExtractor
-javac -target 1.6 -classpath /usr/share/collectd/java/collectd-api.jar org/collectd/java/JMXExtractor.java
-```
-
-### Insert this into your collectd.conf (likely at /etc/collectd/collectd.conf or at /etc/collectd.conf):
-
-```
-LoadPlugin java
-<Plugin java>
-  JVMArg "-Djava.class.path=/usr/share/collectd/java/collectd-api.jar:/path/to/jmxExtractor/"
-
-  LoadPlugin "org.collectd.java.JMXExtractor"
-  <Plugin "JMXExtractor">
-    JMXServiceURL "service:jmx:rmi://localhost:9000/jndi/rmi://localhost:9999/jmxrmi"
-    MBeanObjectName "kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec"
-    MBeanObjectAttribute "Count"
-    MetricName "jmxMetric"
-    HostName "jmxHost"
-  </Plugin>
-</Plugin>
+MBeanObjectName "insert obj name here"
+MBeanObjectAttribute "insert attribute"
+MetricName "metric name"
+MBeanObjectName "insert obj name here"
+MBeanObjectAttribute "insert attribute"
+MetricName "metric name"
+..
+..
+MetricName "metric name"
 ```
 
 Modifiers available are 
