@@ -1,6 +1,7 @@
 package org.collectd.java;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -27,18 +28,18 @@ CollectdReadInterface,
 CollectdShutdownInterface{
 
 	private String _jmx_service_url = null;
-	private String _mbean_attr = null;
-	private String _mbean_obj_name = null;
-    private String _metric_name = null;
-    private String _host_name = null;
-	
-	private Long prevValue = (long) 0;
-	private Long prevTimeStamp = (long) 0;
+	private List<String> _mbean_attr = new ArrayList<String>();
+	private List<String> _mbean_obj_name = new ArrayList<String>();
+	private List<String> _metric_name = new ArrayList<String>();
+	private String _host_name = null;
+
+	private List<Long> prevValue = new ArrayList<Long>();
+	private List<Long> prevTimeStamp = new ArrayList<Long>();
 
 	JMXServiceURL service_url;
 	JMXConnector connector;
 	MBeanServerConnection connection;
-	
+
 
 	public enum ConfigType {
 		URL, OBJNAME, ATTR, METRICNAME, HOSTNAME
@@ -51,25 +52,21 @@ CollectdShutdownInterface{
 		Collectd.registerRead     ("JMXExtractor", this);
 		Collectd.registerShutdown ("JMXExtractor", this);
 
-		prevValue = (long) 0;
-		prevTimeStamp =(long) 0;
 		Collectd.logDebug("Completed registering configs");
 	}
 
 	public int init () {
 		Collectd.logDebug("Entering the init loop");
-		Collectd.logDebug("service url? mbean? attr? metricname? hostname? "+_jmx_service_url+" "+_mbean_obj_name+" "+
-		_mbean_attr+" "+_metric_name+" "+_host_name);
-		
-		if (_jmx_service_url == null || _mbean_attr ==null || _mbean_obj_name == null || _metric_name == null)
+
+		if (_jmx_service_url == null || _mbean_attr.isEmpty() || _mbean_obj_name.isEmpty() || _metric_name.isEmpty())
 		{
 			Collectd.logError ("JMXExtractor: An attribute is missing or is null");
 			return (-1);
 		}
-		
+
 		if( _host_name == null)
 			_host_name = Collectd.getHostname();
-			
+
 		try
 		{
 			service_url = new JMXServiceURL (_jmx_service_url);
@@ -85,6 +82,8 @@ CollectdShutdownInterface{
 		return (0);
 	} 
 
+
+	//	TODO: Clean up submitting multiple MBeans
 	private void submit () {
 		Collectd.logDebug("Entering submit..");
 		ValueList vl;
@@ -93,9 +92,8 @@ CollectdShutdownInterface{
 
 		vl.setHost (_host_name);
 		vl.setPlugin ("JMXStandalone");
-//		vl.setPluginInstance (_mbean_obj_name);
 		vl.setType ("gauge");
-		vl.setTypeInstance(_metric_name);
+		
 
 		Collectd.logDebug("Testing loop ..");
 
@@ -104,68 +102,94 @@ CollectdShutdownInterface{
 		Long curValue ;
 		Long valueDiff;
 
-		try {
-			ObjectName mObjectName = new ObjectName(_mbean_obj_name);
+		int mbeansize = _mbean_obj_name.size() - 1;
+		int idx = 0;
+		
+		while(idx <= mbeansize){
+			try {
+				ObjectName mObjectName = new ObjectName(_mbean_obj_name.get(idx));
 
-			Set<ObjectName> myMbean = connection.queryNames(mObjectName, null);
-			for (ObjectName obj : myMbean) {
+				Set<ObjectName> myMbean = connection.queryNames(mObjectName, null);
+				for (ObjectName obj : myMbean) {
+					
+					Collectd.logDebug("MBean Obj Name - "+_mbean_obj_name.get(idx)+" , Index - "+idx);
+					
+					curValue = (Long) connection.getAttribute(obj, _mbean_attr.get(idx));
+					curTimeStamp = System.currentTimeMillis();
+					TimeDiff = curTimeStamp - prevTimeStamp.get(idx); 
+					Collectd.logDebug("Time Difference in seconds - "+TimeDiff*0.001);
 
-				curValue = (Long) connection.getAttribute(obj, _mbean_attr);
-				curTimeStamp = System.currentTimeMillis();
-				TimeDiff = curTimeStamp - prevTimeStamp; 
-				Collectd.logDebug("Time Difference in seconds - "+TimeDiff*0.001);
+					prevTimeStamp.set(idx, curTimeStamp); 
+					valueDiff = curValue - prevValue.get(idx);
 
-				prevTimeStamp = curTimeStamp;
-				valueDiff = curValue - prevValue;
+					Collectd.logDebug("Previous Value - "+prevValue.get(idx));
+					Collectd.logDebug("Current Value - "+curValue);
 
-				Collectd.logDebug("Previous Value - "+prevValue);
-				Collectd.logDebug("Current Value - "+curValue);
+					prevValue.set(idx,curValue);
+					
+					
+					Double gaugeValue = valueDiff/(TimeDiff*0.001);
+					Collectd.logDebug("Rate/Sec - "+gaugeValue);
 
-				prevValue = curValue;
-				Double gaugeValue = valueDiff/(TimeDiff*0.001);
-				Collectd.logDebug("Rate/Sec - "+gaugeValue);
+					vl.addValue(gaugeValue);
+					vl.setTypeInstance(_metric_name.get(idx));
+					Collectd.dispatchValues(vl);
+					vl.clearValues();
 
-				vl.addValue(gaugeValue);
-				Collectd.dispatchValues(vl);
-				vl.clearValues();
+				}
+				idx++;
+
+			} catch (Exception e) {
+				System.out.println("JMXExtractor: Creating MBean failed: " + e);
 
 			}
+		}
 
-		} catch (Exception e) {
-			System.out.println("JMXExtractor: Creating MBean failed: " + e);
 
-		} 
 
 		Collectd.logDebug("Exiting submit..");
 
 	} 
 
+	//	COMPLETED
+
 	public int config (OConfigItem ci) {
 		Collectd.logDebug("Entering the config loop");
 		List<OConfigItem> children;
-		int i;
+		
 		Collectd.logDebug ("JMXExtractor plugin: config: ci = " + ci + ";");
 
 		children = ci.getChildren ();
-		for (i = 0; i < children.size (); i++)
+		for (int i = 0; i < children.size (); i++)
 		{
 			OConfigItem child;
 			String key;
-
 			child = children.get (i);
 			key = child.getKey ();
+			Collectd.logDebug("Key ->"+key);
+
 			if (key.equalsIgnoreCase ("JMXServiceURL"))
 			{
 				configService (child,ConfigType.URL);
 			}
-			else if(key.equalsIgnoreCase("MBeanObjectName")){
-				configService (child, ConfigType.OBJNAME);
-			}
-			else if(key.equalsIgnoreCase("MbeanObjectAttribute")){
-				configService (child, ConfigType.ATTR);
-			}
-			else if(key.equalsIgnoreCase("MetricName")){
-				configService(child, ConfigType.METRICNAME);
+			//			Make sure that MBean ObjName, ObjAttr and MetricName are all Tied together.
+			else if(key.equalsIgnoreCase("MBeanObjectName")){  
+				OConfigItem child2 = children.get(++i);
+				key = child2.getKey();
+				if(key.equalsIgnoreCase("MbeanObjectAttribute")){
+					OConfigItem child3 = children.get(++i);
+					key = child3.getKey();
+					if(key.equalsIgnoreCase("MetricName")){
+						configService(child,child2,child3);
+					}
+					else{
+						Collectd.logError ("JMXExtractor plugin: Unknown config option: " + key +", Expecting MBeanObjectName, MBeanAttribute and MetricName");
+					}
+				}
+				else{
+					Collectd.logError ("JMXExtractor plugin: Unknown config option: " + key +", Expecting MBeanObjectName, MBeanAttribute and MetricName");
+				}
+
 			}
 			else if(key.equalsIgnoreCase("HostName")){
 				configService(child, ConfigType.HOSTNAME);
@@ -175,6 +199,16 @@ CollectdShutdownInterface{
 				Collectd.logError ("JMXExtractor plugin: Unknown config option: " + key);
 			}
 		}
+		
+		
+		int mbeansize = _mbean_obj_name.size();
+		if(prevTimeStamp.isEmpty()){
+			for(int i =0; i < mbeansize; i++){
+				prevTimeStamp.add(new Long(0));
+				prevValue.add(new Long(0));
+			}
+		}
+		
 		Collectd.logDebug("Exiting config loop");
 
 		return (0);
@@ -204,15 +238,6 @@ CollectdShutdownInterface{
 		case URL:
 			_jmx_service_url = cv.getString ();
 			break;
-		case ATTR:
-			_mbean_attr = cv.getString();
-			break;
-		case OBJNAME:
-			_mbean_obj_name = cv.getString();
-			break;
-		case METRICNAME:
-			_metric_name = cv.getString();
-			break;
 		case HOSTNAME:
 			_host_name = cv.getString();
 			break;
@@ -224,11 +249,47 @@ CollectdShutdownInterface{
 		return (0);
 	} 
 
+	private int configService (OConfigItem ci,OConfigItem ci2,OConfigItem ci3) {
+		Collectd.logDebug("Entering configService..");
+		List<OConfigValue> values,values2,values3;
+		OConfigValue cv,cv2,cv3;
+
+		values = ci.getValues ();
+		values2 = ci2.getValues();
+		values3 = ci3.getValues();
+
+		if (values.size () != 1 || values2.size() !=1 || values3.size() != 1)
+		{
+			Collectd.logError ("JMXExtractor plugin: The Mbean options each need "
+					+ "exactly one string argument.");
+			return (-1);
+		}
+
+		cv = values.get (0);
+		cv2 = values2.get(0);
+		cv3 = values3.get(0);
+
+		if (cv.getType () != OConfigValue.OCONFIG_TYPE_STRING || cv2.getType () != OConfigValue.OCONFIG_TYPE_STRING || cv3.getType () != OConfigValue.OCONFIG_TYPE_STRING)
+		{
+			Collectd.logError ("JMXExtractor plugin: The Mbean options each need "
+					+ "exactly one string argument.");
+			return (-1);
+		}
+
+		_mbean_obj_name.add(cv.getString());
+		_mbean_attr.add(cv2.getString());
+		_metric_name.add(cv3.getString());
+
+		Collectd.logDebug("Exiting configService..");
+		return (0);
+	} 
+
 	public int shutdown () {
 		Collectd.logDebug("org.collectd.java.JMXExtractor.Shutdown ();\n");
 		_jmx_service_url = null;
 		_mbean_attr = null;
 		_mbean_obj_name = null;
+		_metric_name = null;
 
 		try {
 			connector.close();
